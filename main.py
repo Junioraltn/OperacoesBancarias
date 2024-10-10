@@ -7,10 +7,32 @@ clientes = {}
 dadosConta = []
 dadosCliente = ["cpf","nome","dataNascimento","endereco",contas]
 
+def ValidacaoDoCliente():
+    global dadosCliente
+    while True:
+        while True:
+            dadosCliente[0] = input("Digite seu CPF para realizar operações! ")
+            if len(dadosCliente[0]) != 11:
+                print("CPF inválido")
+            else:
+                TriagemDeClientes(dadosCliente[0])
+                break
+        break
+
 def TriagemDeClientes(cpf):
+    global dadosCliente
     if (cpf in clientes):
+        dadosCliente = [cpf if i == 0 else clientes[cpf][i-1] for i in range(0,3)]
         return EscolherConta(cpf)
     return CadastrarCliente(cpf)
+
+def CadastrarCliente(cpf):
+    nome = input("Qual o nome do cliente? ")
+    dataNascimento = input("Qual a data de Nascimento? ")
+    endereco = input("Qual é o endereço? ")
+    clientes[cpf] = [nome,dataNascimento,endereco,[]]
+    CriarConta(cpf)
+    return EscolherConta(cpf)
 
 def CriarConta(cpf):
     if len(clientes[cpf][3]) == 0:
@@ -22,19 +44,11 @@ def CriarConta(cpf):
     conta = clientes[cpf][3][-1] +1
     clientes[cpf][3].append(conta)
     contas[cpf][conta] = {"agencia":AGENCIA,"funcoesConta":funcoesConta}
-    #print(f"Lista de contas: {contas}")
-
-def CadastrarCliente(cpf):
-    nome = input("Qual o nome do cliente? ")
-    dataNascimento = input("Qual a data de Nascimento? ")
-    endereco = input("Qual é o endereço? ")
-    clientes[cpf] = [nome,dataNascimento,endereco,[]]
-    CriarConta(cpf)
-    return EscolherConta(cpf)
 
 def EscolherConta(cpf):
     global dadosConta
     global interaveis
+    global dadosCliente
     if len(clientes[cpf][3]) != 1:
         print(f"Em qual dessas contas {clientes[cpf][3]}, deseja entrar? ")
         entrada = int(input("Digite o número da conta: "))
@@ -42,41 +56,34 @@ def EscolherConta(cpf):
             dadosConta = list(contas[cpf][entrada].values())
             dadosConta.insert(0,entrada)
             interaveis = dadosConta[2]
+            dadosCliente = [cpf if i == 0 else clientes[cpf][i-1] for i in range(0,4)]
     else:
         dadosConta = list(contas[cpf][1].values())
         dadosConta.insert(0,1)
         interaveis.update(dadosConta[2])
+        dadosCliente = [cpf if i == 0 else clientes[cpf][i-1] for i in range(0,4)]
 
-while True:
-    while True:
-        dadosCliente[2] = input("Digite seu CPF para realizar operações! ")
-        if len(dadosCliente[2]) < 11:
-            print("CPF inválido")
-        else:
-            TriagemDeClientes(dadosCliente[2])
-            break
-    break
+def Menu():
+    menu = """
+    [d] Depositar
+    [s] Sacar
+    [e] Extrato
+    [n] Nova Conta
+    [q] Sair
 
+    => """
+    return menu
 
-menu = """
-[d] Depositar
-[s] Sacar
-[e] Extrato
-[n] Nova Conta
-[q] Sair
-
-=> """
-opcoes = ["d","s","e","n","q"]
-
-def TriagemDeOperacoes():
+def TriagemDeOperacoes(opcoes):
+    global interaveis
     while True:
         if (interaveis["saldo"] > 0):
-            opcao = str(input(menu))
+            opcao = str(input(Menu()))
             if (opcao in opcoes):
                 return opcao
 
         elif (interaveis["saldo"] == 0):
-            menu2 = menu[:16]+menu[26:]
+            menu2 = Menu()[:18]+Menu()[32:]
             opcao = input(menu2)
             if (opcao in opcoes):
                 return opcao
@@ -112,6 +119,7 @@ def Sacar(*,saldo,limite,numero_saques):
     interaveis["numero_saques"] += 1
 
 def Depositar():
+
     valor = float(input("Informe o valor do depósito: "))
 
     if valor > 0:
@@ -121,38 +129,44 @@ def Depositar():
     else:
         print("O valor informado é inválido.")
 
-def Extrato(saldo,/,extrato):
+def Extrato(saldo,/,*,extrato):
     print("\n================ EXTRATO ================")
     print("Não foram realizadas movimentações." if not extrato else extrato)
     print(f"\nSaldo: R$ {saldo:.2f}")
     print("==========================================\n")
 
-while True:
-    print(f"\nConta: {dadosConta[0]}")
-    opcao = TriagemDeOperacoes()
-    if ((opcao.lower() == "s") or (opcao.lower() == "sacar")):
-        Sacar(saldo=interaveis["saldo"],limite=interaveis["limite"],numero_saques=interaveis["numero_saques"])
+def main():
+    ValidacaoDoCliente()
+    opcoes = ["d","s","e","n","q"]
 
-    elif ((opcao.lower() == "d") or (opcao.lower() == "depositar")):
-        Depositar()
+    while True:
+        print(f"\nConta: {dadosConta[0]}")
+        opcao = TriagemDeOperacoes(opcoes)
+        if ((opcao.lower() == "s") or (opcao.lower() == "sacar")):
+            Sacar(saldo=interaveis["saldo"],limite=interaveis["limite"],numero_saques=interaveis["numero_saques"])
 
-    elif ((opcao.lower() == "e") or (opcao.lower() == "extrato")):
-        Extrato(interaveis["saldo"],extrato=interaveis["extrato"])
-    
-    elif ((opcao.lower() == "n") or (opcao.lower() in ["nova conta","nova","conta"])):
-        contas[dadosCliente[2]][dadosConta[0]]["funcoesConta"] = interaveis
-        CriarConta(dadosCliente[2])
-        EscolherConta(dadosCliente[2])
+        elif ((opcao.lower() == "d") or (opcao.lower() == "depositar")):
+            Depositar()
 
-    elif ((opcao.lower() == "q") or (opcao.lower() == "sair")):
+        elif ((opcao.lower() == "e") or (opcao.lower() == "extrato")):
+            Extrato(interaveis["saldo"],extrato=interaveis["extrato"])
+        
+        elif ((opcao.lower() == "n") or (opcao.lower() in ["nova conta","nova","conta"])):
+            contas[dadosCliente[0]][dadosConta[0]]["funcoesConta"] = interaveis
+            CriarConta(dadosCliente[0])
+            EscolherConta(dadosCliente[0])
 
-        for iCliente in contas:
-            print(f"Cliente {clientes[iCliente][0]} CPF: {iCliente}\n")
-            for iConta in contas[iCliente]:
-                print(f"Conta: {iConta} Agência: {contas[iCliente][iConta]['agencia']}")
-                Extrato(contas[iCliente][iConta]["funcoesConta"]["saldo"],contas[iCliente][iConta]["funcoesConta"]["extrato"])
-        #print(f"Contas: {contas}")
-        break
+        elif ((opcao.lower() == "q") or (opcao.lower() == "sair")):
+            contas[dadosCliente[0]][dadosConta[0]]["funcoesConta"] = interaveis
 
-    else:
-        print("Operação inválida, por favor escolha uma operação entre as opções.")
+            for iCliente in contas:
+                print(f"Cliente {clientes[iCliente][0]} CPF: {iCliente}\n")
+                for iConta in contas[iCliente]:
+                    print(f"Conta: {iConta} Agência: {contas[iCliente][iConta]['agencia']}")
+                    Extrato(contas[iCliente][iConta]["funcoesConta"]["saldo"],extrato=contas[iCliente][iConta]["funcoesConta"]["extrato"])
+            break
+
+        else:
+            print("Operação inválida, por favor escolha uma operação entre as opções.")
+
+main()
